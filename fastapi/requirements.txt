@@ -1,0 +1,18 @@
+# Core API e Web Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+
+# Validação e Modelos de Dados
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+
+# Segurança e Autenticação
+PyJWT[crypto]>=2.8.0
+python-multipart>=0.0.9
+passlib[bcrypt]>=1.7.4
+
+# Persistência de Dados e Banco de Dados
+sqlmodel>=0.0.16
+
+# Utilitários de Requisições e Testes
+requests>=2.31.0
