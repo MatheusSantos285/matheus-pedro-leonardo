@@ -24,8 +24,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Nota: Caso a função do Integrante 2 espere uma string direta (ex: create_access_token(user_email)),
-    # ajuste a chamada abaixo de acordo com a assinatura escrita em jwt_handler.py.
     access_token = create_access_token(data={"sub": form_data.username})
 
     return TokenResponse(
