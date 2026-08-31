@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-import jwt_handler
+import jwt
 
 from security.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 

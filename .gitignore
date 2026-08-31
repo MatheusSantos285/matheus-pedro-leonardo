@@ -16,3 +16,6 @@ __pycache__/
 # Arquivos do Sistema Operacional
 .DS_Store
 Thumbs.db
+
+# Variaveis de ambiente e segredos
+.env
