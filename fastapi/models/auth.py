@@ -2,7 +2,6 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 class TokenResponse(BaseModel):
     """Contrato de resposta para a geração de tokens JWT bem-sucedida."""
     access_token: str

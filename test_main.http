@@ -1,11 +1,58 @@
 # Test your FastAPI endpoints
 
-GET http://127.0.0.1:8000/
+### Testar rota de saúde
+GET http://127.0.0.1:8000/health
 Accept: application/json
 
-###
+### Testar predição de ticket
+POST http://127.0.0.1:8000/predict
+Content-Type: application/json
 
-GET http://127.0.0.1:8000/hello/User
-Accept: application/json
+{
+  "text": "Minha conta foi cobrada duas vezes.",
+  "customer_age": 30,
+  "customer_gender": "Male",
+  "ticket_priority": "High",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}
 
-###
+### Autenticação - Gerar Token
+POST http://127.0.0.1:8000/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=admin
+
+> {%
+    // Aqui o PyCharm captura o "access_token" do JSON de resposta e salva na variável "auth_token"
+    client.global.set("auth_token", response.body.access_token);
+%}
+
+### Testar predição de ticket (Protegido por JWT)
+POST http://127.0.0.1:8000/predict
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "text": "Quero solicitar o estorno do valor pago por favor.",
+  "customer_age": 35,
+  "customer_gender": "Male",
+  "ticket_priority": "High",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}
+
+
+### Testar predição com dados anômalos (Fuzzing)
+POST http://127.0.0.1:8000/predict
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "text": "Texto válido de suporte",
+  "customer_age": 15,
+  "customer_gender": "Male",
+  "ticket_priority": "SUPER_URGENTE",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}

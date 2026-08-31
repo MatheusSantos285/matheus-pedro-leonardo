@@ -1,26 +1,34 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from models.auth import TokenResponse
+from security.jwt_handler import create_access_token
 
-# from security.jwt_handler import create_access_token
+router = APIRouter(tags=["Authentication"])
 
-router = APIRouter()
-
-@router.post("/auth/token", tags=["Authentication"])
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post("/auth/token", response_model=TokenResponse)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     """
-    POST /auth/token: Autentica o administrador 'in-code' e emite o token JWT.
+    POST /auth/token: Recebe credenciais via formulário OAuth2, valida contra os
+    segredos do .env e gera um token JWT criptográfico assinado via PyJWT.
     """
-    # Exemplo de validação in-code exigida no TP1:
-    if form_data.username != "admin" or form_data.password != "admin":
+    # Carrega as credenciais administrativas seguras mapeadas no .env
+    admin_user = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin")
+
+    # Validação restrita das credenciais
+    if form_data.username != admin_user or form_data.password != admin_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário ou senha incorretos",
+            detail="Credenciais inválidas de administrador.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token_fake = f"jwt-token-para-usuario-{form_data.username}"
+    # Nota: Caso a função do Integrante 2 espere uma string direta (ex: create_access_token(user_email)),
+    # ajuste a chamada abaixo de acordo com a assinatura escrita em jwt_handler.py.
+    access_token = create_access_token(data={"sub": form_data.username})
 
-    return {
-        "access_token": token_fake,
-        "token_type": "bearer"
-    }
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer"
+    )

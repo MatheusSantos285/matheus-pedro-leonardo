@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 from models.predict import PredictRequest, PredictResponse
 
-# Ao desenvolver o sistema JWT com o Integrante 2, descomente a linha abaixo
-# from security.dependencies import get_current_user
+from security.auth import get_current_admin_user
 
 router = APIRouter()
 
@@ -13,7 +12,7 @@ router = APIRouter()
 )
 async def predict_intent(
         request: PredictRequest,  # Data Binding e validação do Pydantic na entrada
-        # current_user: str = Depends(get_current_user)  # Proteção JWT (Integrante 2)
+        current_admin: str = Depends(get_current_admin_user)  # Proteção JWT
 ):
     """
     POST /predict: Recebe o ticket de suporte completo, sanitiza o conteúdo via Pydantic
@@ -22,7 +21,6 @@ async def predict_intent(
     input_text_lower = request.text.lower()
 
     # Motor de Regras Lógicas Provisório (Mock de IA) alinhado com as categorias do EDA:
-    # ['Refund request', 'Billing inquiry', 'Cancellation request', 'Technical issue', 'Product inquiry']
     if any(keyword in input_text_lower for keyword in
            ["cancelar", "cancelamento", "excluir", "cancellation", "close my account"]):
         intent = "Cancellation request"
@@ -52,5 +50,5 @@ async def predict_intent(
     return PredictResponse(
         input_text=request.text,
         predicted_intent=intent,
-        confidence=0.91
+        confidence=confidence
     )
