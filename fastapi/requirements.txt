@@ -10,6 +10,7 @@ pydantic-settings>=2.2.0
 PyJWT[crypto]>=2.8.0
 python-multipart>=0.0.9
 passlib[bcrypt]>=1.7.4
+python-dotenv>=1.0.0
 
 # Persistência de Dados e Banco de Dados
 sqlmodel>=0.0.16
