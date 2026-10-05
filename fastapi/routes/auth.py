@@ -1,16 +1,22 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import select, Session
+from config.rate_limiter import limiter
 from database.connection import get_session
 from models.auth import TokenResponse
 from models.db_models import User
 from security.hash_password import HashPassword
 from security.jwt_handler import create_access_token
+from fastapi import Request
 
 router = APIRouter(tags=["Authentication"])
 
 @router.post("/auth/token", response_model=TokenResponse)
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)): # 1. Injetamos a sessão do banco
+@limiter.limit("10/minute")  # Limite de taxa para mitigar ataques de força bruta
+async def login(
+        request: Request,
+        form_data: OAuth2PasswordRequestForm = Depends(),
+        session: Session = Depends(get_session)): # 1. Injetamos a sessão do banco
     """
     POST /auth/token: Recebe credenciais via formulário OAuth2, valida contra o
     banco de dados (comparando o hash bcrypt) e gera um token JWT.

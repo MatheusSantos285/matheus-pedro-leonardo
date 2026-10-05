@@ -72,3 +72,32 @@ def test_login_campos_ausentes_retorna_422(client: TestClient):
 
     # O FastAPI (via OAuth2PasswordRequestForm) barra requisições malformadas na borda
     assert response.status_code == 422
+
+def test_login_rate_limiting_bloqueia_brute_force(client: TestClient):
+    """
+    Garante que o SlowAPI bloqueia IPs após 10 tentativas no /auth/token (Brute Force Defense).
+    """
+    payload = {"username": "admin_a", "password": "SenhaErrada!123"}
+
+    # Dispara 10 requisições (atinge o limite)
+    for _ in range(10):
+        client.post("/auth/token", data=payload)
+
+    # A 11ª requisição deve ser bloqueada pelo SlowAPI
+    response = client.post("/auth/token", data=payload)
+
+    assert response.status_code == 429
+    assert "Rate limit exceeded" in response.text
+
+
+def test_headers_de_seguranca_estao_presentes(client: TestClient):
+    """
+    Verifica se o SecurityHeadersMiddleware injetou as defesas contra Clickjacking e Sniffing.
+    """
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.headers.get("X-Frame-Options") == "DENY"
+    assert response.headers.get("X-Content-Type-Options") == "nosniff"
+    assert "default-src 'self'" in response.headers.get("Content-Security-Policy", "")
+    assert "max-age=31536000" in response.headers.get("Strict-Transport-Security", "")

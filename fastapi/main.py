@@ -1,19 +1,15 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlmodel import SQLModel, Session, select
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
-# 1. Configurações e Conexão
-from database.connection import engine, create_db_and_tables
-from security.hash_password import HashPassword
-from models.db_models import User, PredictionRecord
-
-# 2. Importação das Rotas
+from config.rate_limiter import limiter
 from routes.health import router as health_router
 from routes.auth import router as auth_router
 from routes.predict import router as predict_router
+from security.middlewares import SecurityHeadersMiddleware
 from sqlite_database import seed_database
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,15 +26,26 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# 1. CORS com Allowlist Explícita
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://seu-front-end-confiavel.com"
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-
+# 2. Injeção dos Cabeçalhos de Segurança
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Registro das Rotas Modulares
 app.include_router(health_router)
