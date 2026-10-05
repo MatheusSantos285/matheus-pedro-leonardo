@@ -22,11 +22,11 @@ Este projeto consiste em uma solução ponta a ponta para um sistema agêntico d
 │   ├── main.py               # Ponto de entrada da aplicação FastAPI
 │   ├── sqlite_database.py    # Script de criação e população inicial do banco
 │   ├── database.db           # Banco de dados SQLite populado
-    ├── requirements.txt          # Dependências do projeto Python
-    └──tests/
-       ├── conftest.py           # Fixtures e configurações do Pytest (SQLite em memória)
-       ├── test_predict.py       # Testes automatizados da rota /predict (BOLA e Mass Assignment)
-       └── test_security.py      # Testes automatizados de segurança (401 sem token, 429 Rate Limit)
+│   ├── requirements.txt          # Dependências do projeto Python
+│   └──tests/
+│      ├── conftest.py           # Fixtures e configurações do Pytest (SQLite em memória)
+│      ├── test_predict.py       # Testes automatizados da rota /predict (BOLA e Mass Assignment)
+│      └── test_security.py      # Testes automatizados de segurança (401 sem token, 429 Rate Limit)
 └── zap/
     ├── scan_passivo_zap.md   # Análise técnica dos achados do scan passivo OWASP ZAP
     └── owasp_zap_report.html # Relatório bruto exportado pelo OWASP ZAP
