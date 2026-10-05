@@ -1,0 +1,92 @@
+# ============================================================================
+# API de Atendimento ao Cliente - Testes Operacionais e de Segurança
+# ============================================================================
+
+### 1. Testar Rota Pública (Health Check)
+# Deve retornar 200 OK confirmando que a API está no ar.
+GET http://127.0.0.1:8000/health
+Accept: application/json
+
+
+### ============================================================================
+# TESTES DE AUTENTICAÇÃO E AUTORIZAÇÃO
+### ============================================================================
+
+### 2. DEFESA DE AUTENTICAÇÃO: Testar predição sem token JWT
+# A API deve barrar o acesso e retornar HTTP 401 Unauthorized.
+POST http://127.0.0.1:8000/predict
+Content-Type: application/json
+
+{
+  "text": "Minha conta foi cobrada duas vezes, preciso de ajuda.",
+  "customer_age": 30,
+  "customer_gender": "Male",
+  "ticket_priority": "High",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}
+
+### 3. AUTENTICAÇÃO: Gerar Token JWT com credenciais do banco
+# Utilizamos o usuário 'admin' criado pelo script sqlite_database.py
+# @name loginAdmin
+POST http://127.0.0.1:8000/auth/token
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=admin
+
+> {%
+    // O PyCharm captura o "access_token" do JSON e salva na variável global
+    client.global.set("auth_token", response.body.access_token);
+%}
+
+
+### ============================================================================
+# TESTES DE PREDIÇÃO E VALIDAÇÃO DE BORDAS (BOPLA)
+### ============================================================================
+
+### 4. HAPPY PATH: Testar predição de ticket autenticado
+# Deve retornar 200 OK. O registro será salvo no SQLite atrelado ao dono do token (Sem BOLA).
+POST http://127.0.0.1:8000/predict
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "text": "Quero solicitar o estorno do valor pago por favor.",
+  "customer_age": 35,
+  "customer_gender": "Male",
+  "ticket_priority": "High",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}
+
+### 5. DEFESA BOPLA: Fuzzing e Validação Estrita de Enums/Limites
+# Deve retornar HTTP 422. Validações engatilhadas: Idade < 18 e Prioridade fora do Enum.
+POST http://127.0.0.1:8000/predict
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "text": "Texto longo o suficiente para passar no min_length.",
+  "customer_age": 15,
+  "customer_gender": "Male",
+  "ticket_priority": "SUPER_URGENTE",
+  "ticket_channel": "Chat",
+  "product_purchased": "iPhone"
+}
+
+### 6. DEFESA BOPLA: Prevenção contra Mass Assignment
+# Deve retornar HTTP 422. O modelo extra="forbid" bloqueará os campos maliciosos "confidence" e "owner_id".
+POST http://127.0.0.1:8000/predict
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "text": "Meu aparelho parou de funcionar do nada.",
+  "customer_age": 45,
+  "customer_gender": "Female",
+  "ticket_priority": "Medium",
+  "ticket_channel": "Email",
+  "product_purchased": "Canon EOS",
+  "owner_id": 999,
+  "confidence": 0.99
+}
