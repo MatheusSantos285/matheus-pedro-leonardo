@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
+from database.connection import get_session
+from models.db_models import User, PredictionRecord
 from models.predict import PredictRequest, PredictResponse
-
-from security.auth import get_current_admin_user
+from security.auth import get_current_user
 
 router = APIRouter()
 
@@ -11,13 +13,15 @@ router = APIRouter()
     tags=["AI Model Prediction"]
 )
 async def predict_intent(
-        request: PredictRequest,  # Data Binding e validação do Pydantic na entrada
-        current_admin: str = Depends(get_current_admin_user)  # Proteção JWT
+        request: PredictRequest,  # Gate 1: Validação Estrita do Pydantic
+        current_username: str = Depends(get_current_user),  # Gate 2: Autenticação JWT
+        session: Session = Depends(get_session) # Gate 3: Persistência
 ):
-    """
-    POST /predict: Recebe o ticket de suporte completo, sanitiza o conteúdo via Pydantic
-    e simula a predição da intenção (Ticket Type) com base nas regras extraídas do EDA.
-    """
+    # 1. Recuperamos o usuário logado para obter o seu ID no banco
+    user = session.exec(select(User).where(User.username == current_username)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário do token não encontrado no banco.")
+
     input_text_lower = request.text.lower()
 
     # Motor de Regras Lógicas Provisório (Mock de IA) alinhado com as categorias do EDA:
@@ -45,6 +49,23 @@ async def predict_intent(
     # Se o ticket for Critical, elevamos a confiança do nosso classificador provisório
     if request.ticket_priority == "Critical" and confidence < 0.95:
         confidence = 0.97
+
+    # 2. Persistência de Dados Segura (Mitigando Mass Assignment)
+    # Atribuímos explicitamente cada campo ao modelo do Banco de Dados
+    new_prediction = PredictionRecord(
+        owner_id=user.id,  # Amarrado ao JWT!
+        input_text=request.text,
+        customer_age=request.customer_age,
+        customer_gender=request.customer_gender,
+        ticket_priority=request.ticket_priority,
+        ticket_channel=request.ticket_channel,
+        product_purchased=request.product_purchased,
+        predicted_intent=intent,
+        confidence=confidence
+    )
+
+    session.add(new_prediction)
+    session.commit()
 
     # Retorna o payload estruturado exatamente como o PredictResponse espera
     return PredictResponse(
