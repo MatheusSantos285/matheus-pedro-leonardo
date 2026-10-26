@@ -14,11 +14,9 @@ __pycache__/
 .idea/
 fastapi/.idea
 fastapi/.env
-fastapi/*.db
 fastapi/__pycache__/
 fastapi/.pytest\_cache/
 fastapi/.venv/
-fastapi/database.db
 
 # Arquivos do Sistema Operacional
 .DS_Store
